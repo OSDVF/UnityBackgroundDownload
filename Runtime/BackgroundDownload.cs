@@ -151,6 +151,7 @@ namespace Unity.Networking
         protected BackgroundDownloadStatus _status = BackgroundDownloadStatus.Downloading;
         /// <summary>Hold error message. For internal use only.</summary>
         protected string _error;
+        public Action OnCompleted;
 
         /// <summary>
         /// Start download from given URL. Creates BackgroundDownloadConfig using given arguments.

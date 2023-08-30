@@ -12,6 +12,7 @@ namespace Unity.Networking
     class BackgroundDownloadAndroid : BackgroundDownload
     {
         private const string TEMP_FILE_SUFFIX = ".part";
+        static string persistentDataPath = null;
         static AndroidJavaClass _playerClass;
         static AndroidJavaClass _backgroundDownloadClass;
 
@@ -54,16 +55,18 @@ namespace Unity.Networking
         internal BackgroundDownloadAndroid(BackgroundDownloadConfig config)
             : base(config)
         {
+            if (persistentDataPath == null) {
+                persistentDataPath = Application.persistentDataPath;
+            }
             SetupBackendStatics();
-            string filePath = Path.Combine(Application.persistentDataPath, config.filePath);
-            _tempFilePath = filePath + TEMP_FILE_SUFFIX;
-            if (File.Exists(filePath))
-                File.Delete(filePath);
+            _tempFilePath = config.filePath + TEMP_FILE_SUFFIX;
+            if (File.Exists(config.filePath))
+                File.Delete(config.filePath);
             if (File.Exists(_tempFilePath))
                 File.Delete(_tempFilePath);
             else
             {
-                var dir = Path.GetDirectoryName(filePath);
+                var dir = Path.GetDirectoryName(config.filePath);
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
             }
@@ -130,7 +133,7 @@ namespace Unity.Networking
         string QueryDestinationPath(out string tempFilePath)
         {
             string uri = _download.Call<string>("getDestinationUri");
-            string basePath = Application.persistentDataPath;
+            string basePath = persistentDataPath;
             var pos = uri.IndexOf(basePath);
             tempFilePath = uri.Substring(pos);
             pos += basePath.Length;
@@ -171,6 +174,7 @@ namespace Unity.Networking
                     }
 
                     _status = BackgroundDownloadStatus.Done;
+                    OnCompleted?.Invoke();
                 }
                 else if (status < 0)
                 {
@@ -201,7 +205,7 @@ namespace Unity.Networking
         internal static Dictionary<string, BackgroundDownload> LoadDownloads()
         {
             var downloads = new Dictionary<string, BackgroundDownload>();
-            var file = Path.Combine(Application.persistentDataPath, "unity_background_downloads.dl");
+            var file = Path.Combine(persistentDataPath, "unity_background_downloads.dl");
             if (File.Exists(file))
             {
                 foreach (var line in File.ReadAllLines(file))
@@ -221,7 +225,7 @@ namespace Unity.Networking
 
         internal static void SaveDownloads(Dictionary<string, BackgroundDownload> downloads)
         {
-            var file = Path.Combine(Application.persistentDataPath, "unity_background_downloads.dl");
+            var file = Path.Combine(persistentDataPath, "unity_background_downloads.dl");
             if (downloads.Count > 0)
             {
                 var ids = new string[downloads.Count];

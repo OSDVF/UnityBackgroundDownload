@@ -29,12 +29,11 @@ namespace Unity.Networking
         {
 #if ENABLE_WINMD_SUPPORT
             CreateBackgroundDownloadGroup();
-            string filePath = Path.Combine(Application.persistentDataPath, config.filePath);
-            string directory = Path.GetDirectoryName(filePath).Replace('/', '\\');
+            string directory = Path.GetDirectoryName(config.filePath).Replace('/', '\\');
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
             _cancelSource = new CancellationTokenSource();
-            StartDownload(filePath, directory);
+            StartDownload(config.filePath, directory);
 #endif
         }
 
