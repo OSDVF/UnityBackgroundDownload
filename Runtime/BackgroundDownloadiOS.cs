@@ -27,7 +27,7 @@ namespace Unity.Networking
                     if (header.Value != null)
                         foreach (var val in header.Value)
                             UnityBackgroundDownloadAddRequestHeader(request, header.Key, val);
-            _backend = UnityBackgroundDownloadStart(request, config.filePath);
+            _backend = UnityBackgroundDownloadStart(request, config.filePath, ToUnityListener);
         }
 
         BackgroundDownloadiOS(IntPtr backend, BackgroundDownloadConfig config)
@@ -45,6 +45,18 @@ namespace Unity.Networking
                 UpdateStatus();
                 return _status == BackgroundDownloadStatus.Downloading;
             }
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(ToUnityCallback))]
+        public static void ToUnityListener(IntPtr backend)
+        {
+            byte[] buffer = new byte[2048];
+            int length = UnityBackgroundDownloadGetUrl(backend, buffer);
+            var url = new Uri(MarshalObjCString(buffer, length));
+            length = UnityBackgroundDownloadGetFilePath(backend, buffer);
+            var filePath = MarshalObjCString(buffer, length);
+
+            _downloads[filePath].OnCompleted?.Invoke();
         }
 
         internal static Dictionary<string, BackgroundDownload> LoadDownloads()
@@ -125,8 +137,10 @@ namespace Unity.Networking
         static extern void UnityBackgroundDownloadAddRequestHeader(IntPtr headers,
             [MarshalAs(UnmanagedType.LPWStr)] string name, [MarshalAs(UnmanagedType.LPWStr)] string value);
 
+        delegate void ToUnityCallback(IntPtr backend);
+
         [DllImport("__Internal")]
-        static extern IntPtr UnityBackgroundDownloadStart(IntPtr request, [MarshalAs(UnmanagedType.LPWStr)] string dest);
+        static extern IntPtr UnityBackgroundDownloadStart(IntPtr request, [MarshalAs(UnmanagedType.LPWStr)] string dest, ToUnityCallback onCompleted);
 
         [DllImport("__Internal")]
         static extern int UnityBackgroundDownloadGetStatus(IntPtr backend);

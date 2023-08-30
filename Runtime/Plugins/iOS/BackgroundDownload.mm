@@ -2,6 +2,7 @@
 #include <string>
 
 typedef void (^UnityHandleEventsForBackgroundURLSession)();
+typedef void (*ToUnityCallback)(void*);
 
 static NSString* _Nonnull kUnityBackgroungDownloadSessionID = @"UnityBackgroundDownload";
 static NSURLSession* gUnityBackgroundDownloadSession = nil;
@@ -42,6 +43,7 @@ enum
 
 @property int status;
 @property NSString* error;
+@property ToUnityCallback completedCallback;
 
 @end
 
@@ -49,6 +51,7 @@ enum
 {
     int _status;
     NSString* _error;
+    ToUnityCallback _completedCallback;
 }
 
 @synthesize status = _status;
@@ -58,6 +61,7 @@ enum
 {
     _status = kStatusDownloading;
     _error = nil;
+    _completedCallback = nil;
     return self;
 }
 
@@ -103,6 +107,9 @@ enum
     [fileManager replaceItemAtURL: destUri withItemAtURL: location backupItemName: nil options: NSFileManagerItemReplacementUsingNewMetadataOnly resultingItemURL: nil error: nil];
     UnityBackgroundDownload* download = [backgroundDownloads objectForKey: downloadTask];
     download.status = kStatusDone;
+    if (download.completedCallback != nil) {
+        download.completedCallback((__bridge void*)downloadTask);
+    }
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
@@ -124,11 +131,12 @@ enum
     }
 }
 
-- (NSURLSessionDownloadTask*)newSessionTask:(NSURLSession*)session withRequest:(NSURLRequest*)request forDestination:(NSString*)dest
+- (NSURLSessionDownloadTask*)newSessionTask:(NSURLSession*)session withRequest:(NSURLRequest*)request forDestination:(NSString*)dest withCallback:(ToUnityCallback) onCompleted
 {
     NSURLSessionDownloadTask *task = [session downloadTaskWithRequest: request];
     task.taskDescription = dest;
     UnityBackgroundDownload* download = [[UnityBackgroundDownload alloc] init];
+    download.completedCallback = onCompleted;
     [backgroundDownloads setObject: download forKey: task];
     return task;
 }
@@ -139,7 +147,7 @@ enum
         for (NSUInteger i = 0; i < downloadTasks.count; ++i)
         {
             UnityBackgroundDownload* download = [[UnityBackgroundDownload alloc] init];
-            [backgroundDownloads setObject: download forKey: downloadTasks[i]];
+            [self->backgroundDownloads setObject: download forKey: downloadTasks[i]];
         }
     }];
 }
@@ -256,13 +264,13 @@ extern "C" void UnityBackgroundDownloadAddRequestHeader(void* req, const char16_
     [request setValue: MakeNSString(value) forHTTPHeaderField: MakeNSString(header)];
 }
 
-extern "C" void* UnityBackgroundDownloadStart(void* req, const char16_t* dest)
+extern "C" void* UnityBackgroundDownloadStart(void* req, const char16_t* dest, ToUnityCallback onCompleted)
 {
     NSMutableURLRequest* request = (__bridge_transfer NSMutableURLRequest*)req;
     NSString* destPath = MakeNSString(dest);
     NSURLSession* session = UnityBackgroundDownloadSession();
     UnityBackgroundDownloadDelegate* delegate = (UnityBackgroundDownloadDelegate*)session.delegate;
-    NSURLSessionDownloadTask *task = [delegate newSessionTask: session withRequest: request forDestination: destPath];
+    NSURLSessionDownloadTask *task = [delegate newSessionTask: session withRequest: request forDestination: destPath withCallback: onCompleted];
     [task resume];
     return (__bridge void*)task;
 }
