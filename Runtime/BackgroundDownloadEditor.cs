@@ -1,16 +1,19 @@
 #if UNITY_EDITOR
 
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace Unity.Networking
 {
     class BackgroundDownloadEditor : BackgroundDownload
     {
+        HttpClient _client;
         public BackgroundDownloadEditor(BackgroundDownloadConfig config)
             : base(config)
         {
             _status = BackgroundDownloadStatus.Failed;
             _error = "Not implemented for Unity Editor";
+            config.onCompleted?.Invoke();
         }
 
         public override bool keepWaiting { get { return false; } }

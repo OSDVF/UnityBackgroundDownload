@@ -18,9 +18,6 @@ namespace Unity.Networking
         internal BackgroundDownloadiOS(BackgroundDownloadConfig config)
             : base(config)
         {
-            var destDir = Path.GetDirectoryName(config.filePath);
-            if (!Directory.Exists(destDir))
-                Directory.CreateDirectory(destDir);
             IntPtr request = UnityBackgroundDownloadCreateRequest(config.url.AbsoluteUri);
             if (config.requestHeaders != null)
                 foreach (var header in config.requestHeaders)
@@ -56,7 +53,7 @@ namespace Unity.Networking
             length = UnityBackgroundDownloadGetFilePath(backend, buffer);
             var filePath = MarshalObjCString(buffer, length);
 
-            _downloads[filePath].OnCompleted?.Invoke();
+            _downloads[filePath].config.onCompleted?.Invoke();
         }
 
         internal static Dictionary<string, BackgroundDownload> LoadDownloads()

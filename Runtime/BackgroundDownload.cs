@@ -63,6 +63,7 @@ namespace Unity.Networking
         /// Additional HTTP headers to send with the request. Key is HTTP header name, value is a list of values, when more than one, multiple headers with the same key will be sent.
         /// </summary>
         public Dictionary<string, List<string>> requestHeaders;
+        internal Action onCompleted;
 
         /// <summary>
         /// A convenience helper to add a single HTTP header to requestHeaders. Fills the value list if called again with the same header name.
@@ -151,7 +152,6 @@ namespace Unity.Networking
         protected BackgroundDownloadStatus _status = BackgroundDownloadStatus.Downloading;
         /// <summary>Hold error message. For internal use only.</summary>
         protected string _error;
-        public Action OnCompleted;
 
         /// <summary>
         /// Start download from given URL. Creates BackgroundDownloadConfig using given arguments.
@@ -160,11 +160,12 @@ namespace Unity.Networking
         /// <param name="filePath">A relative path to save to; will be saved under Application.persistentDataPath.</param>
         /// <returns>An instance for monitoring the progress.</returns>
         /// <exception cref="ArgumentException">Thrown if there already is a download with given destination file.</exception>
-        public static BackgroundDownload Start(Uri url, String filePath)
+        public static BackgroundDownload Start(Uri url, String filePath, Action onCompleted = null)
         {
             var config = new BackgroundDownloadConfig();
             config.url = url;
             config.filePath = filePath;
+            config.onCompleted = onCompleted;
             return Start(config);
         }
 

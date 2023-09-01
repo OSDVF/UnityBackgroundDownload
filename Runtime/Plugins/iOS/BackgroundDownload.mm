@@ -104,7 +104,11 @@ enum
 {
     NSFileManager* fileManager;
     NSURL* destUri = GetDestinationUri(downloadTask.taskDescription, &fileManager);
-    [fileManager replaceItemAtURL: destUri withItemAtURL: location backupItemName: nil options: NSFileManagerItemReplacementUsingNewMetadataOnly resultingItemURL: nil error: nil];
+    NSError *error;
+    BOOL success = [fileManager replaceItemAtURL: destUri withItemAtURL: location backupItemName: nil options: NSFileManagerItemReplacementUsingNewMetadataOnly resultingItemURL: nil error: &error];
+    if (!success) {
+        NSLog(@"Failed to move file to destination: %@", error);
+    }
     UnityBackgroundDownload* download = [backgroundDownloads objectForKey: downloadTask];
     download.status = kStatusDone;
     if (download.completedCallback != nil) {
