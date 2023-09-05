@@ -55,9 +55,7 @@ namespace Unity.Networking
         internal BackgroundDownloadAndroid(BackgroundDownloadConfig config)
             : base(config)
         {
-            if (persistentDataPath == null) {
-                persistentDataPath = Application.persistentDataPath;
-            }
+            persistentDataPath ??= Application.persistentDataPath;
             SetupBackendStatics();
             _tempFilePath = config.filePath + TEMP_FILE_SUFFIX;
             if (File.Exists(config.filePath))
@@ -174,7 +172,7 @@ namespace Unity.Networking
                     }
 
                     _status = BackgroundDownloadStatus.Done;
-                    OnCompleted?.Invoke();
+                    config.onCompleted?.Invoke();
                 }
                 else if (status < 0)
                 {
@@ -204,6 +202,7 @@ namespace Unity.Networking
 
         internal static Dictionary<string, BackgroundDownload> LoadDownloads()
         {
+            persistentDataPath ??= Application.persistentDataPath;
             var downloads = new Dictionary<string, BackgroundDownload>();
             var file = Path.Combine(persistentDataPath, "unity_background_downloads.dl");
             if (File.Exists(file))
