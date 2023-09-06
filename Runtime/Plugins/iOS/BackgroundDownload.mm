@@ -207,6 +207,7 @@ static NSURLSession* UnityBackgroundDownloadSession()
     if (gUnityBackgroundDownloadSession == nil)
     {
         NSURLSessionConfiguration* config = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier: kUnityBackgroungDownloadSessionID];
+        [config setSessionSendsLaunchEvents: YES];
         UnityBackgroundDownloadDelegate* delegate = [[UnityBackgroundDownloadDelegate alloc] init];
         gUnityBackgroundDownloadSession = [NSURLSession sessionWithConfiguration: config delegate: delegate delegateQueue: nil];
         [delegate collectTasksForSession: gUnityBackgroundDownloadSession];
